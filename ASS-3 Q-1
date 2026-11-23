@@ -1,0 +1,143 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct N {
+    int k;
+    struct N *l, *r;
+} N;
+
+N *make(int k) {
+    N *p = malloc(sizeof(N));
+    if (!p) exit(1);
+    p->k = k;
+    p->l = p->r = NULL;
+    return p;
+}
+
+N *ins(N *t, int k) {
+    if (!t) return make(k);
+    if (k < t->k) t->l = ins(t->l, k);
+    else if (k > t->k) t->r = ins(t->r, k);
+    return t;
+}
+
+N *find(N *t, int k, int *c) {
+    *c = 0;
+    while (t) {
+        (*c)++;
+        if (k == t->k) return t;
+        t = k < t->k ? t->l : t->r;
+    }
+    return NULL;
+}
+
+int ht(N *t) {
+    if (!t) return -1;
+    int a = ht(t->l), b = ht(t->r);
+    return 1 + (a > b ? a : b);
+}
+
+void ino(N *t) {
+    if (t) {
+        ino(t->l);
+        printf("%d ", t->k);
+        ino(t->r);
+    }
+}
+
+void pre(N *t) {
+    if (t) {
+        printf("%d ", t->k);
+        pre(t->l);
+        pre(t->r);
+    }
+}
+
+void post(N *t) {
+    if (t) {
+        post(t->l);
+        post(t->r);
+        printf("%d ", t->k);
+    }
+}
+
+void level(N *t) {
+    N *q[1000];
+    int f = 0, b = 0;
+    if (t) q[b++] = t;
+
+    while (f < b) {
+        N *x = q[f++];
+        printf("%d ", x->k);
+        if (x->l) q[b++] = x->l;
+        if (x->r) q[b++] = x->r;
+    }
+}
+
+N *minN(N *t) {
+    while (t && t->l) t = t->l;
+    return t;
+}
+
+N *del(N *t, int k) {
+    if (!t) return NULL;
+
+    if (k < t->k) t->l = del(t->l, k);
+    else if (k > t->k) t->r = del(t->r, k);
+    else {
+        if (!t->l) {
+            N *x = t->r;
+            free(t);
+            return x;
+        }
+        if (!t->r) {
+            N *x = t->l;
+            free(t);
+            return x;
+        }
+        N *x = minN(t->r);
+        t->k = x->k;
+        t->r = del(t->r, x->k);
+    }
+    return t;
+}
+
+void destroy(N *t) {
+    if (t) {
+        destroy(t->l);
+        destroy(t->r);
+        free(t);
+    }
+}
+
+int main(void) {
+    int a[] = {50, 30, 70, 20, 40, 60, 80, 65}, c;
+    N *t = NULL;
+
+    for (int i = 0; i < 8; i++)
+        t = ins(t, a[i]);
+
+    printf("Inorder: ");
+    ino(t);
+    printf("\nPreorder: ");
+    pre(t);
+    printf("\nPostorder: ");
+    post(t);
+    printf("\nLevel order: ");
+    level(t);
+
+    printf("\nHeight: %d\n", ht(t));
+    find(t, 65, &c);
+    printf("Comparisons for 65: %d\n", c);
+
+    t = del(t, 20);
+    t = del(t, 30);
+    t = del(t, 50);
+
+    printf("After deletions: ");
+    ino(t);
+    puts("");
+
+    destroy(t);
+    return 0;
+}
