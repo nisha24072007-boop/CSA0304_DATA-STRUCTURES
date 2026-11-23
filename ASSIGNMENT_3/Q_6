@@ -1,0 +1,149 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct T {
+    struct T *c[26];
+    int words, end;
+} T;
+
+T *node(void) {
+    T *t = calloc(1, sizeof(T));
+    if (!t) exit(1);
+    return t;
+}
+
+int exists(T *t, const char *w) {
+    for (; *w; w++) {
+        int i = *w - 'a';
+
+        if (i < 0 || i > 25 || !t->c[i])
+            return 0;
+
+        t = t->c[i];
+    }
+
+    return t->end;
+}
+
+void insert(T *t, const char *w) {
+    if (exists(t, w))
+        return;
+
+    t->words++;
+
+    for (; *w; w++) {
+        int i = *w - 'a';
+
+        if (i < 0 || i > 25)
+            continue;
+
+        if (!t->c[i])
+            t->c[i] = node();
+
+        t = t->c[i];
+        t->words++;
+    }
+
+    t->end = 1;
+}
+
+T *prefix(T *t, const char *p) {
+    for (; *p; p++) {
+        int i = *p - 'a';
+
+        if (i < 0 || i > 25 || !t->c[i])
+            return NULL;
+
+        t = t->c[i];
+    }
+
+    return t;
+}
+
+int count(T *t, const char *p) {
+    T *x = prefix(t, p);
+    return x ? x->words : 0;
+}
+
+void list(T *t, char *b, int d) {
+    if (!t) return;
+
+    if (t->end) {
+        b[d] = 0;
+        printf("%s ", b);
+    }
+
+    for (int i = 0; i < 26; i++) {
+        if (t->c[i]) {
+            b[d] = 'a' + i;
+            list(t->c[i], b, d + 1);
+        }
+    }
+}
+
+int del(T *t, const char *w, int d) {
+    if (!t) return 0;
+
+    if (!w[d]) {
+        if (!t->end) return 0;
+        t->end = 0;
+        return 1;
+    }
+
+    int i = w[d] - 'a';
+
+    if (i < 0 || i > 25 || !t->c[i])
+        return 0;
+
+    if (del(t->c[i], w, d + 1)) {
+        t->words--;
+        return 1;
+    }
+
+    return 0;
+}
+
+void freeT(T *t) {
+    if (t) {
+        for (int i = 0; i < 26; i++)
+            freeT(t->c[i]);
+
+        free(t);
+    }
+}
+
+int main(void) {
+    char *a[] = {
+        "anand", "anitha", "anu",
+        "arun", "bala", "anusuya"
+    };
+
+    T *r = node();
+
+    for (int i = 0; i < 6; i++)
+        insert(r, a[i]);
+
+    char *p[] = {"a", "an", "anu", "b", "z", ""};
+
+    for (int i = 0; i < 6; i++)
+        printf("%s:%d ", p[i], count(r, p[i]));
+
+    char b[100];
+
+    printf("\nAutocomplete an: ");
+    T *x = prefix(r, "an");
+
+    if (x)
+        list(x, b, 0);
+
+    printf("\nSearch anand: %s",
+           exists(r, "anand") ? "found" : "not found");
+
+    del(r, "anand", 0);
+
+    printf("\nAfter delete: %s\n",
+           exists(r, "anand") ? "found" : "not found");
+
+    freeT(r);
+    return 0;
+}
