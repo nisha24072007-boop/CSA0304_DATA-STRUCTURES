@@ -1,0 +1,121 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct N {
+    int k;
+    struct N *l, *r;
+} N;
+
+N *rotR(N *x) {
+    N *y = x->l;
+    x->l = y->r;
+    y->r = x;
+    return y;
+}
+
+N *rotL(N *x) {
+    N *y = x->r;
+    x->r = y->l;
+    y->l = x;
+    return y;
+}
+
+N *splay(N *r, int k) {
+    if (!r || r->k == k)
+        return r;
+
+    if (k < r->k) {
+        if (!r->l) return r;
+
+        if (k < r->l->k) {
+            r->l->l = splay(r->l->l, k);
+            r = rotR(r);
+        } else if (k > r->l->k) {
+            r->l->r = splay(r->l->r, k);
+
+            if (r->l->r)
+                r->l = rotL(r->l);
+        }
+
+        return r->l ? rotR(r) : r;
+    } else {
+        if (!r->r) return r;
+
+        if (k > r->r->k) {
+            r->r->r = splay(r->r->r, k);
+            r = rotL(r);
+        } else if (k < r->r->k) {
+            r->r->l = splay(r->r->l, k);
+
+            if (r->r->l)
+                r->r = rotR(r->r);
+        }
+
+        return r->r ? rotL(r) : r;
+    }
+}
+
+N *insert(N *r, int k) {
+    if (!r) {
+        r = malloc(sizeof(N));
+        r->k = k;
+        r->l = r->r = NULL;
+        return r;
+    }
+
+    r = splay(r, k);
+
+    if (r->k == k)
+        return r;
+
+    N *n = malloc(sizeof(N));
+    n->k = k;
+
+    if (k < r->k) {
+        n->l = r->l;
+        n->r = r;
+        r->l = NULL;
+    } else {
+        n->r = r->r;
+        n->l = r;
+        r->r = NULL;
+    }
+
+    return n;
+}
+
+void ino(N *r) {
+    if (r) {
+        ino(r->l);
+        printf("%d ", r->k);
+        ino(r->r);
+    }
+}
+
+void freeT(N *r) {
+    if (r) {
+        freeT(r->l);
+        freeT(r->r);
+        free(r);
+    }
+}
+
+int main(void) {
+    int a[] = {10, 20, 30, 40, 50, 25};
+    N *r = NULL;
+
+    for (int i = 0; i < 6; i++)
+        r = insert(r, a[i]);
+
+    printf("Inorder: ");
+    ino(r);
+
+    r = splay(r, 25);
+    printf("\nAfter search 25 root = %d", r->k);
+
+    r = splay(r, 40);
+    printf("\nAfter search 40 root = %d\n", r->k);
+
+    freeT(r);
+    return 0;
+}
