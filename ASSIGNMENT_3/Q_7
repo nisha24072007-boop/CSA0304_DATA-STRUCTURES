@@ -1,0 +1,137 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define L 80
+
+typedef struct T {
+    struct T *c[26];
+    int end;
+} T;
+
+T *newT(void) {
+    return calloc(1, sizeof(T));
+}
+
+void add(T *t, const char *s) {
+    for (; *s; s++) {
+        int i = *s - 'a';
+
+        if (i < 0 || i > 25)
+            continue;
+
+        if (!t->c[i])
+            t->c[i] = newT();
+
+        t = t->c[i];
+    }
+
+    t->end = 1;
+}
+
+int exact(T *t, const char *s) {
+    for (; *s; s++) {
+        int i = *s - 'a';
+
+        if (i < 0 || i > 25 || !t->c[i])
+            return 0;
+
+        t = t->c[i];
+    }
+
+    return t->end;
+}
+
+void autoList(T *t, char *b, int d) {
+    if (!t) return;
+
+    if (t->end) {
+        b[d] = 0;
+        printf("%s ", b);
+    }
+
+    for (int i = 0; i < 26; i++) {
+        if (t->c[i]) {
+            b[d] = 'a' + i;
+            autoList(t->c[i], b, d + 1);
+        }
+    }
+}
+
+int cmp(const void *a, const void *b) {
+    return strcmp((const char *)a, (const char *)b);
+}
+
+int lower(char w[][L], int n, const char *k) {
+    int l = 0, r = n;
+
+    while (l < r) {
+        int m = (l + r) / 2;
+
+        if (strcmp(w[m], k) < 0)
+            l = m + 1;
+        else
+            r = m;
+    }
+
+    return l;
+}
+
+void range(char w[][L], int n,
+           const char *lo, const char *hi) {
+    int i = lower(w, n, lo);
+
+    while (i < n && strcmp(w[i], hi) <= 0)
+        printf("%s ", w[i++]);
+}
+
+void freeT(T *t) {
+    if (t) {
+        for (int i = 0; i < 26; i++)
+            freeT(t->c[i]);
+
+        free(t);
+    }
+}
+
+int main(void) {
+    char w[][L] = {
+        "apple", "apply", "apt", "bat",
+        "batch", "cat", "cater", "dog"
+    };
+
+    int n = sizeof(w) / sizeof(w[0]);
+
+    qsort(w, n, L, cmp);
+
+    T *r = newT();
+
+    for (int i = 0; i < n; i++)
+        add(r, w[i]);
+
+    printf("Exact cat: %s\n",
+           exact(r, "cat") ? "found" : "not found");
+
+    printf("Autocomplete ap: ");
+
+    T *p = r;
+    char *pre = "ap";
+
+    while (*pre && p) {
+        int i = *pre++ - 'a';
+        p = (i >= 0 && i < 26) ? p->c[i] : NULL;
+    }
+
+    char b[L];
+
+    if (p)
+        autoList(p, b, 0);
+
+    printf("\nRange bat to dog: ");
+    range(w, n, "bat", "dog");
+
+    puts("");
+
+    freeT(r);
+    return 0;
+}
