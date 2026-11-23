@@ -1,0 +1,174 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define R 1
+#define B 0
+
+typedef struct N {
+    int k, c;
+    struct N *l, *r, *p;
+} N;
+
+N *nil;
+
+N *make(int k) {
+    N *z = malloc(sizeof(N));
+    z->k = k;
+    z->c = R;
+    z->l = z->r = z->p = nil;
+    return z;
+}
+
+void L(N **root, N *x) {
+    N *y = x->r;
+    x->r = y->l;
+
+    if (y->l != nil)
+        y->l->p = x;
+
+    y->p = x->p;
+
+    if (x->p == nil)
+        *root = y;
+    else if (x == x->p->l)
+        x->p->l = y;
+    else
+        x->p->r = y;
+
+    y->l = x;
+    x->p = y;
+}
+
+void RR(N **root, N *y) {
+    N *x = y->l;
+    y->l = x->r;
+
+    if (x->r != nil)
+        x->r->p = y;
+
+    x->p = y->p;
+
+    if (y->p == nil)
+        *root = x;
+    else if (y == y->p->r)
+        y->p->r = x;
+    else
+        y->p->l = x;
+
+    x->r = y;
+    y->p = x;
+}
+
+void fix(N **root, N *z) {
+    while (z->p->c == R) {
+        if (z->p == z->p->p->l) {
+            N *u = z->p->p->r;
+
+            if (u->c == R) {
+                z->p->c = B;
+                u->c = B;
+                z->p->p->c = R;
+                z = z->p->p;
+            } else {
+                if (z == z->p->r) {
+                    z = z->p;
+                    L(root, z);
+                }
+
+                z->p->c = B;
+                z->p->p->c = R;
+                RR(root, z->p->p);
+            }
+        } else {
+            N *u = z->p->p->l;
+
+            if (u->c == R) {
+                z->p->c = B;
+                u->c = B;
+                z->p->p->c = R;
+                z = z->p->p;
+            } else {
+                if (z == z->p->l) {
+                    z = z->p;
+                    RR(root, z);
+                }
+
+                z->p->c = B;
+                z->p->p->c = R;
+                L(root, z->p->p);
+            }
+        }
+    }
+
+    (*root)->c = B;
+}
+
+void insert(N **root, int k) {
+    N *z = make(k), *y = nil, *x = *root;
+
+    while (x != nil) {
+        y = x;
+
+        if (k == x->k) {
+            free(z);
+            return;
+        }
+
+        x = k < x->k ? x->l : x->r;
+    }
+
+    z->p = y;
+
+    if (y == nil)
+        *root = z;
+    else if (k < y->k)
+        y->l = z;
+    else
+        y->r = z;
+
+    fix(root, z);
+}
+
+N *minimum(N *x) {
+    while (x != nil && x->l != nil)
+        x = x->l;
+
+    return x;
+}
+
+void ino(N *x) {
+    if (x != nil) {
+        ino(x->l);
+        printf("%d(%c) ", x->k, x->c ? 'R' : 'B');
+        ino(x->r);
+    }
+}
+
+void freeT(N *x) {
+    if (x != nil) {
+        freeT(x->l);
+        freeT(x->r);
+        free(x);
+    }
+}
+
+int main(void) {
+    nil = malloc(sizeof(N));
+    nil->c = B;
+    nil->l = nil->r = nil->p = nil;
+
+    N *root = nil;
+    int a[] = {10, 20, 30, 15, 25, 5};
+
+    for (int i = 0; i < 6; i++)
+        insert(&root, a[i]);
+
+    printf("Inorder: ");
+    ino(root);
+
+    printf("\nMinimum: %d\n", minimum(root)->k);
+
+    freeT(root);
+    free(nil);
+    return 0;
+}
